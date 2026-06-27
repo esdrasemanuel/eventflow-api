@@ -1,4 +1,5 @@
 const { parseBEOFromFile } = require("../services/beoParser");
+const { syncParsedBEO } = require("../services/eventSyncService");
 
 async function importBEO(req, res) {
   try {
@@ -8,10 +9,14 @@ async function importBEO(req, res) {
 
     const parsedData = await parseBEOFromFile(req.file.path);
 
-    return res.status(200).json({
-      message: "BEO parsed successfully",
-      fileName: req.file.originalname,
-      data: parsedData
+    const syncResult = await syncParsedBEO(
+      parsedData,
+      req.file.originalname
+    );
+
+    return res.status(201).json({
+      message: "BEO imported and synced successfully",
+      result: syncResult
     });
   } catch (error) {
     console.error(error);

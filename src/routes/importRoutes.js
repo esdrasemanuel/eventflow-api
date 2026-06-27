@@ -10,4 +10,12 @@ const upload = multer({
 
 router.post("/beo", upload.single("file"), importBEO);
 
+router.get("/test-db", async (req, res) => {
+    const pool = require("../db");
+
+    const result = await pool.query("SELECT NOW()");
+
+    res.json(result.rows);
+});
+
 module.exports = router;
