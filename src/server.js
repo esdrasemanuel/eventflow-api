@@ -20,3 +20,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`EventFlow API running on port ${PORT}`);
 });
+
+
+const authRoutes = require("./routes/authRoutes");
+
+app.use("/api/auth", authRoutes);
