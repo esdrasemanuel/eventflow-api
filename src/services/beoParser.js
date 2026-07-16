@@ -76,7 +76,49 @@ function normalizeLines(text) {
 }
 
 function isDateLine(line) {
-  return /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+\d{2}(st|nd|rd|th)\s+\w+\s+\d{4}$/i.test(line);
+  return /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+\d{1,2}(st|nd|rd|th)?\s+\w+\s+\d{4}$/i.test(
+    line
+  );
+}
+
+// Converts the date to a ISO format used by PostgreSQL.
+// Example: "Wednesday, 7th May 2026" becomes "2026-05-07".
+function parseEventDate(dateString) {
+  if (!dateString) return null;
+
+  const months = {
+    january: "01",
+    february: "02",
+    march: "03",
+    april: "04",
+    may: "05",
+    june: "06",
+    july: "07",
+    august: "08",
+    september: "09",
+    october: "10",
+    november: "11",
+    december: "12"
+  };
+
+  const cleanedDate = dateString
+    .replace(/^[A-Za-z]+,\s*/, "")
+    .replace(/(\d+)(st|nd|rd|th)/i, "$1")
+    .trim();
+
+  const match = cleanedDate.match(
+    /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/
+  );
+
+  if (!match) return null;
+
+  const day = match[1].padStart(2, "0");
+  const month = months[match[2].toLowerCase()];
+  const year = match[3];
+
+  if (!month) return null;
+
+  return `${year}-${month}-${day}`;
 }
 
 function splitIntoEventBlocks(lines) {
@@ -125,6 +167,8 @@ function parseHeader(lines, eventId) {
     }
   }
 
+  const originalDate = lines.find(isDateLine) || null;
+
   return {
     eventId,
     accountName: accountMatch ? accountMatch[1].trim() : null,
@@ -135,7 +179,7 @@ function parseHeader(lines, eventId) {
     bookingName,
     email: emailMatch ? emailMatch[1] : null,
     totalRooms: totalRoomsMatch ? Number(totalRoomsMatch[1]) : null,
-    date: lines.find(isDateLine) || null
+    date: parseEventDate(originalDate)
   };
 }
 
@@ -907,6 +951,67 @@ function linkEquipmentToActivities(activities, equipment) {
   });
 }
 
+// Converts an HH:MM time into minutes.
+// This allows times to be compared without depending on their text order.
+function timeToMinutes(time) {
+  if (!time || !/^\d{2}:\d{2}$/.test(time)) {
+    return null;
+  }
+
+  const [hours, minutes] = time.split(":").map(Number);
+
+  if (
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+// Calculates the general event start and end times basead on activities
+// The event start at the earliest activity start time
+// and finish at the latest activity end time.
+function calculateEventTimeRange(activities) {
+  const validActivities = (activities || []).filter(activity => {
+    return (
+      timeToMinutes(activity.startTime) !== null &&
+      timeToMinutes(activity.endTime) !== null
+    );
+  });
+
+  if (validActivities.length === 0) {
+    return {
+      eventStartTime: null,
+      eventEndTime: null
+    };
+  }
+
+  const eventStartTime = validActivities.reduce((earliest, activity) => {
+    return timeToMinutes(activity.startTime) <
+      timeToMinutes(earliest.startTime)
+      ? activity
+      : earliest;
+  }).startTime;
+
+  const eventEndTime = validActivities.reduce((latest, activity) => {
+    return timeToMinutes(activity.endTime) >
+      timeToMinutes(latest.endTime)
+      ? activity
+      : latest;
+  }).endTime;
+
+  return {
+    eventStartTime,
+    eventEndTime
+  };
+}
+
 function parseBEO(text) {
   const lines = normalizeLines(text);
   const blocks = splitIntoEventBlocks(lines);
@@ -932,6 +1037,11 @@ function parseBEO(text) {
     activities = linkBeverageToActivities(activities, beverageServices);
     activities = linkEquipmentToActivities(activities, equipment);
 
+    const {
+      eventStartTime,
+      eventEndTime
+    } = calculateEventTimeRange(activities);
+
     if (eventDietaries.length > 0) {
       warnings.push(
         "Dietary information detected at event level. Please review association manually."
@@ -940,6 +1050,8 @@ function parseBEO(text) {
 
     return {
       ...header,
+      eventStartTime,
+      eventEndTime,
       operationalNotes,
       agreementNotes,
       billingInstructions,

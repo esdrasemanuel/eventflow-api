@@ -101,6 +101,8 @@ async function syncParsedBEO(parsedData, sourceFile = null) {
             email,
             total_rooms,
             event_date,
+            start_time,
+            end_time,
             operational_notes,
             agreement_notes,
             billing_instructions,
@@ -108,7 +110,7 @@ async function syncParsedBEO(parsedData, sourceFile = null) {
             import_count,
             last_imported_at
           )
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,1,NOW())
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,1,NOW())
           RETURNING id
           `,
           [
@@ -122,6 +124,8 @@ async function syncParsedBEO(parsedData, sourceFile = null) {
             event.email,
             event.totalRooms,
             event.date,
+            event.eventStartTime,
+            event.eventEndTime,
             toText(event.operationalNotes),
             toText(event.agreementNotes),
             toText(event.billingInstructions),
@@ -147,14 +151,16 @@ async function syncParsedBEO(parsedData, sourceFile = null) {
             email = $7,
             total_rooms = $8,
             event_date = $9,
-            operational_notes = $10,
-            agreement_notes = $11,
-            billing_instructions = $12,
-            event_dietaries = $13,
+            start_time = $10,
+            end_time = $11,
+            operational_notes = $12,
+            agreement_notes = $13,
+            billing_instructions = $14,
+            event_dietaries = $15,
             import_count = COALESCE(import_count, 0) + 1,
             last_imported_at = NOW(),
             updated_at = NOW()
-          WHERE id = $14
+          WHERE id = $16
           `,
           [
             event.accountName,
@@ -166,6 +172,8 @@ async function syncParsedBEO(parsedData, sourceFile = null) {
             event.email,
             event.totalRooms,
             event.date,
+            event.eventStartTime,
+            event.eventEndTime,
             toText(event.operationalNotes),
             toText(event.agreementNotes),
             toText(event.billingInstructions),
