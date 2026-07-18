@@ -145,11 +145,13 @@ async function allEventsList(req, res) {
       ...event,
       start_time: formatTime(event.start_time),
       end_time: formatTime(event.end_time),
+      event_date_formated: formatEventDate(event.event_date),
+
 
       activities: event.activities.map((activity) => ({
         ...activity,
         start_time: formatTime(activity.start_time),
-        end_time: formatTime(activity.end_time)
+        end_time: formatTime(activity.end_time),
       }))
     }));
 
