@@ -8,6 +8,29 @@ function formatTime(value) {
   return value.toISOString().substring(11, 16);
 }
 
+function formatEventDate(dateInstance) {
+  if (!dateInstance) return "";
+  const date = new Date(dateInstance);
+  
+  // Get the day of the week and month name in English
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const month = date.toLocaleDateString("en-US", { month: "long" });
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  // Logic to determine the correct ordinal suffix
+  let suffix = "th";
+  if (day < 11 || day > 13) {
+    switch (day % 10) {
+      case 1: suffix = "st"; break;
+      case 2: suffix = "nd"; break;
+      case 3: suffix = "rd"; break;
+    }
+  }
+
+  return `${weekday}, ${day}${suffix} ${month} ${year}`;
+}
+
 async function eventsList(req, res) {
   try {
     const today = new Date();
@@ -75,6 +98,7 @@ async function eventsList(req, res) {
         ...event,
         start_time: eventStartTime,
         end_time: eventEndTime,
+        event_date_formated: formatEventDate(event.event_date),
         activities
       };
     });
