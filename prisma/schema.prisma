@@ -4,10 +4,135 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model activities {
+  id                    Int                  @id @default(autoincrement())
+  event_id              Int
+  start_time            DateTime?            @db.Time(6)
+  end_time              DateTime?            @db.Time(6)
+  time_range            String?              @db.VarChar(50)
+  room                  String?              @db.VarChar(255)
+  function_name         String?              @db.VarChar(255)
+  setup                 String?              @db.VarChar(255)
+  expected              Int?
+  guaranteed            Int?
+  rental                String?              @db.VarChar(100)
+  notes                 String?
+  created_at            DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?            @default(now()) @db.Timestamp(6)
+  import_id             Int?
+  is_active             Boolean?             @default(true)
+  original_activity_key String?              @db.VarChar(255)
+  version               Int?                 @default(1)
+  assigned_to           Int?
+  completed             Boolean?             @default(false)
+  activity_key          String?              @db.VarChar(255)
+  content_hash          String?              @db.VarChar(64)
+  has_changes           Boolean?             @default(false)
+  needs_review          Boolean?             @default(false)
+  events                events               @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event")
+  activity_equipment    activity_equipment[]
+  beverage_services     beverage_services?
+  food_services         food_services?
+
+  @@unique([event_id, activity_key], map: "idx_activities_event_activity_key")
+  @@index([event_id], map: "idx_activities_event")
+}
+
+model activity_equipment {
+  id             Int        @id @default(autoincrement())
+  activity_id    Int
+  equipment_name String?    @db.VarChar(255)
+  is_checked     Boolean?   @default(false)
+  checked_at     DateTime?  @db.Timestamp(6)
+  activities     activities @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_equipment_activity")
+}
+
+model beverage_services {
+  id            Int        @id @default(autoincrement())
+  activity_id   Int        @unique
+  service_name  String?
+  price         String?    @db.VarChar(100)
+  expected      Int?
+  bar_tab_limit Decimal?   @db.Decimal(10, 2)
+  notes         String?
+  activities    activities @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_beverage_activity")
+}
+
+model event_imports {
+  id          Int       @id @default(autoincrement())
+  event_id    Int
+  import_hash String?   @db.VarChar(64)
+  imported_at DateTime? @default(now()) @db.Timestamp(6)
+  source_file String?   @db.VarChar(255)
+  is_active   Boolean?  @default(true)
+  events      events    @relation(fields: [event_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model events {
+  id                   Int             @id @default(autoincrement())
+  account_name         String?         @db.VarChar(255)
+  start_time           DateTime?       @db.Time(6)
+  end_time             DateTime?       @db.Time(6)
+  contract_number      String?         @db.VarChar(100)
+  contact_name         String?         @db.VarChar(255)
+  catering_manager     String?         @db.VarChar(255)
+  booking_type         String?         @db.VarChar(255)
+  booking_name         String?
+  email                String?         @db.VarChar(255)
+  total_rooms          Int?
+  event_date           DateTime?       @db.Date
+  operational_notes    String?
+  agreement_notes      String?
+  billing_instructions String?
+  event_dietaries      String?
+  created_at           DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?       @default(now()) @db.Timestamp(6)
+  external_reference   String?         @db.VarChar(255)
+  current_import_id    Int?
+  is_archived          Boolean?        @default(false)
+  event_key            String?         @unique(map: "idx_events_event_key") @db.VarChar(255)
+  import_count         Int?            @default(0)
+  last_imported_at     DateTime?       @db.Timestamp(6)
+  activities           activities[]
+  event_imports        event_imports[]
+}
+
+model food_items {
+  id              Int           @id @default(autoincrement())
+  food_service_id Int
+  item_name       String?
+  price           String?       @db.VarChar(100)
+  expected        Int?
+  food_services   food_services @relation(fields: [food_service_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_food_item")
+}
+
+model food_services {
+  id            Int          @id @default(autoincrement())
+  activity_id   Int          @unique
+  service_name  String?
+  service_price String?      @db.VarChar(100)
+  expected      Int?
+  food_items    food_items[]
+  activities    activities   @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_food_activity")
+}
+
+model users {
+  id            Int       @id @default(autoincrement())
+  first_name    String    @db.VarChar(100)
+  last_name     String    @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  password_hash String
+  phone         String?   @db.VarChar(30)
+  role          String    @db.VarChar(30)
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  last_login    DateTime? @db.Timestamp(6)
 }
