@@ -32,17 +32,57 @@ async function eventsList(req, res) {
       }
     });
 
-    const formattedEvents = events.map((event) => ({
-      ...event,
-      start_time: formatTime(event.start_time),
-      end_time: formatTime(event.end_time),
+    const now = formatTime(new Date());
 
-      activities: event.activities.map((activity) => ({
-        ...activity,
-        start_time: formatTime(activity.start_time),
-        end_time: formatTime(activity.end_time)
-      }))
-    }));
+    const overview = {
+      eventsToday: events.length,
+      inProgress: 0,
+      tasks: 0,
+      drinkReception: 0
+    };
+
+    const eventList = events.map((event) => {
+      const eventStartTime = formatTime(event.start_time);
+      const eventEndTime = formatTime(event.end_time);
+
+      if (
+        eventStartTime &&
+        eventEndTime &&
+        eventStartTime <= now &&
+        eventEndTime >= now
+      ) {
+        overview.inProgress++;
+      }
+
+      const activities = event.activities.map((activity) => {
+        overview.tasks++;
+
+        if (
+          activity.beverage_services &&
+          activity.beverage_services.length > 0
+        ) {
+          overview.drinkReception++;
+        }
+
+        return {
+          ...activity,
+          start_time: formatTime(activity.start_time),
+          end_time: formatTime(activity.end_time)
+        };
+      });
+
+      return {
+        ...event,
+        start_time: eventStartTime,
+        end_time: eventEndTime,
+        activities
+      };
+    });
+
+    const formattedEvents = {
+      overview,
+      events: eventList
+    };
 
     return res.status(200).json(formattedEvents);
   } catch (error) {
@@ -54,6 +94,8 @@ async function eventsList(req, res) {
     });
   }
 }
+
+
 async function allEventsList(req, res) {
   try {
     const today = new Date();
