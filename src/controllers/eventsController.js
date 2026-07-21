@@ -49,7 +49,13 @@ async function eventsList(req, res) {
       include: {
         activities: {
           include: {
-            beverage_services: true
+            beverage_services: true,
+            activity_equipment: true,
+            food_services: {
+              include: {
+                food_items: true
+              }
+            }
           }
         }
       }
@@ -135,7 +141,13 @@ async function allEventsList(req, res) {
       include: {
         activities: {
           include: {
-            beverage_services: true
+            beverage_services: true,
+            activity_equipment: true,
+            food_services: {
+              include: {
+                food_items: true
+              }
+            }
           }
         }
       }
