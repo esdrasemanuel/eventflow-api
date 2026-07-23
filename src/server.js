@@ -3,13 +3,14 @@ const cors = require("cors");
 require("dotenv").config();
 
 const importRoutes = require("./routes/importRoutes");
+const setupRoutes = require("./routes/setupRoutes");
+const authRoutes = require("./routes/authRoutes");
+const eventsRoutes = require("./routes/eventsRoutes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-app.use("/api/import", importRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "EventFlow API is running" });
@@ -22,8 +23,7 @@ app.listen(PORT, () => {
 });
 
 
-const authRoutes = require("./routes/authRoutes");
-const eventsRoutes = require("./routes/eventsRoutes");
-
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventsRoutes);
+app.use("/api/import", importRoutes);
+app.use("/api/setup", setupRoutes)

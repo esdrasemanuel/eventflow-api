@@ -136,3 +136,28 @@ model users {
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
   last_login    DateTime? @db.Timestamp(6)
 }
+
+model roomChecklistState {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @map("event_id")
+  roomName  String   @map("room_name") @db.VarChar(255)
+  itemKey   String   @map("item_key") @db.VarChar(255)
+  isChecked Boolean  @default(false) @map("is_checked")
+  userId    Int      @map("user_id")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([eventId, roomName, itemKey], name: "unique_event_room_item", map: "unique_event_room_item")
+  @@map("room_checklist_states")
+}
+
+model roomSetupComment {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @map("event_id")
+  roomName  String   @map("room_name") @db.VarChar(255)
+  comment   String?  @db.Text
+  userId    Int      @map("user_id")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([eventId, roomName], name: "unique_event_room_comment", map: "unique_event_room_comment")
+  @@map("room_setup_comments")
+}
