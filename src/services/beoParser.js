@@ -728,7 +728,8 @@ function parseEquipment(lines, accountName) {
     "Deposit %",
     "Revenue Summary",
     "Organisation Authorized Signature",
-    "Date Last Printed"
+    "Date Last Printed",
+    "Meeting Agenda Notes"
   ]);
 
   const eqLines = lines.slice(equipmentIndex + 1, stopIndex);
